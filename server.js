@@ -1,13 +1,11 @@
 "use strict"
 
-//Lets require/import the HTTP module
 var http = require('http');
 var auth = require('basic-auth');
 var dispatcher = require('httpdispatcher');
 var Promise = require('promise');
 
-//Lets define a port we want to listen to
-const PORT=8080; 
+const PORT=process.env.PORT || 8080; 
 
 
 var AWS = require('aws-sdk');
@@ -133,6 +131,6 @@ var server = http.createServer(handleRequest);
 //Lets start our server
 server.listen(PORT, function(){
     //Callback triggered when server is successfully listening. Hurray!
-    console.log("Server listening on: http://localhost:%s", process.env.PORT || 8080);
+    console.log("Server listening on: http://localhost:%s", PORT);
 });
 
