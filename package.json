@@ -5,6 +5,8 @@
     "aws-sdk": "^2.6.9",
     "babel-cli": "^6.16.0",
     "basic-auth": "^1.0.4",
+    "http": "0.0.0",
+    "httpdispatcher": "^1.0.0",
     "promise": "^7.1.1"
   }
 }
