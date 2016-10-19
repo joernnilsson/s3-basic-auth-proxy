@@ -1,6 +1,7 @@
 "use strict"
 
 var http = require('http');
+var url = require('url');
 var auth = require('basic-auth');
 var dispatcher = require('httpdispatcher');
 var Promise = require('promise');
@@ -69,27 +70,6 @@ dispatcher.onGet("/server/releases", function(req, res) {
 dispatcher.onGet("/server/snapshots", function(req, res) {
 	getList("snapshots", req, res);
 });
-
-function getSignedLink(url){
-	let key = req.url.replace("/server/", "");
-	console.log(key);
-
-	// s3.getSignedUrl('getObject', {
-	// 	Bucket: process.env.S3_BUCKET,
-	// 	Key: key
-	//   }, function(err, url){
-	// 	if(err){
-	//   		res.writeHead(500, {'Content-Type': 'text/plain'});
-	//   		res.end("S3 error");
-	//   		console.log(err);
-	// 	} else {
-	// 		res.writeHead(302, {
-	// 		  'Location': url
-	// 		});
-	// 		res.end();
-	// 	}
-	// });
-}
 
 function getList(type, req, res){
 	s3.listObjects({
@@ -183,6 +163,19 @@ var server = http.createServer(handleRequest);
 //Lets start our server
 server.listen(PORT, function(){
     //Callback triggered when server is successfully listening. Hurray!
-    console.log("Server listening on: http://localhost:%s", PORT);
+    console.log("Server listening on port: %s", PORT);
+
+    if(process.env.KEEPALIVE_URL){
+    	let kurl = url.parse(process.env.KEEPALIVE_URL);
+	    setInterval(() => {
+	    	http.get({
+	    		protocol: kurl.protocol,
+		        host: kurl.hostname,
+		        port: kurl.port,
+		        path: kurl.path
+		    });
+	    }, 30*1000);
+	}
+
 });
 

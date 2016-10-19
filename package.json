@@ -7,6 +7,7 @@
     "basic-auth": "^1.0.4",
     "http": "0.0.0",
     "httpdispatcher": "^1.0.0",
-    "promise": "^7.1.1"
+    "promise": "^7.1.1",
+    "url": "^0.11.0"
   }
 }
