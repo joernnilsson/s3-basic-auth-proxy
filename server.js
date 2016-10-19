@@ -70,6 +70,27 @@ dispatcher.onGet("/server/snapshots", function(req, res) {
 	getList("snapshots", req, res);
 });
 
+function getSignedLink(url){
+	let key = req.url.replace("/server/", "");
+	console.log(key);
+
+	// s3.getSignedUrl('getObject', {
+	// 	Bucket: process.env.S3_BUCKET,
+	// 	Key: key
+	//   }, function(err, url){
+	// 	if(err){
+	//   		res.writeHead(500, {'Content-Type': 'text/plain'});
+	//   		res.end("S3 error");
+	//   		console.log(err);
+	// 	} else {
+	// 		res.writeHead(302, {
+	// 		  'Location': url
+	// 		});
+	// 		res.end();
+	// 	}
+	// });
+}
+
 function getList(type, req, res){
 	s3.listObjects({
 		Bucket: process.env.S3_BUCKET
@@ -82,45 +103,76 @@ function getList(type, req, res){
 	  	console.log(slist);
 	  	res.writeHead(200, {'Content-Type': 'text/html'});
 	  	let list = {snapshots: [], releases: []};
-	  	let str = slist.Contents
-	  	.filter(e => null != e.Key.match(/\w-(\d+)\.(\d+)\.(\d+)/))
-	  	.map(e => {
-	  		let data = {
-	  			type: "",
-	  			va: 0,
-	  			va: 0,
-	  			va: 0,
-	  			date: new Date(),
-	  			branch: "",
-	  			key: e.Key
-	  		};
+	  	
+	  	let files = slist.Contents
+		  	.filter(e => null != e.Key.match(/\w-(\d+)\.(\d+)\.(\d+)/))
+		  	.map(e => {
+		  		let data = {
+		  			type: "",
+		  			va: 0,
+		  			va: 0,
+		  			va: 0,
+		  			date: new Date(),
+		  			branch: "",
+		  			key: e.Key,
+		  			url: ""
+		  		};
 
-	  		data.type = e.Key.split("/")[0];
+		  		data.type = e.Key.split("/")[0];
 
-	  		let v = e.Key.match(/\w-(\d+)\.(\d+)\.(\d+)/);
+		  		let v = e.Key.match(/\w-(\d+)\.(\d+)\.(\d+)/);
 
-	  		console.log(e.Key);
-	  		data.va = v[1];
-	  		data.vb = v[2];
-	  		data.vc = v[3];
+		  		console.log(e.Key);
+		  		data.va = v[1];
+		  		data.vb = v[2];
+		  		data.vc = v[3];
 
-	  		if(data.type == "snapshots"){
-	  			let a = e.Key.match(/\w-\d+\.\d+\.\d+\.(.*)\.(\d\d\d\d-\d\d-\d\d)\..*\.zip/);
-	  			data.date = new Date(a[2]);
-	  			data.branch = a[1]
-	  		}else if(data.type == "releases"){
+		  		if(data.type == "snapshots"){
+		  			let a = e.Key.match(/\w-\d+\.\d+\.\d+\.(.*)\.(\d\d\d\d-\d\d-\d\d)\..*\.zip/);
+		  			data.date = new Date(a[2]);
+		  			data.branch = a[1]
+		  		}else if(data.type == "releases"){
 
-	  		}
-	  		return data;
-	  	})
-	  	.filter(k => k.type == type)
-	  	.sort((a, b) => {
-	  		if (a.date > b.date) return -1
-	  		else return 1
-	  	})
-	  	.map(k => "<a href='/server/"+k.key+"'>" + k.key + "</a>")
-	  	.join("<br />");
-	  	res.end(str);
+		  		}
+		  		return data;
+		  	})
+		  	.filter(k => k.type == type)
+		  	.sort((a, b) => {
+		  		if (a.date > b.date) return -1
+		  		else return 1
+		  	}).map ( e => {
+
+		  		return new Promise((resolve, reject) => {
+
+		  			// Fetch signed url
+					s3.getSignedUrl('getObject', {
+						Bucket: process.env.S3_BUCKET,
+						Key: e.key
+					  }, function(err, url){
+						if(err){
+							console.log(err)
+							// TODO fail properly
+							e.url = "Error fetching url for "+e.key;
+					  	} else {
+					  		e.url = url;
+						}
+						resolve(e);
+					});
+
+		  		});
+		   	});
+
+	  	let plist = Promise.all(files);
+
+	  	plist.then(list => {
+	  		let str = list
+	  			.map(k => "<a href='"+k.url+"'>" + k.key + "</a>")
+	  			.join("<br />");
+	  		res.end(str);
+	  	}, err => {
+	  		console.log(err)
+	  		res.end(err);
+	  	});
 	  }
 	});
 }
