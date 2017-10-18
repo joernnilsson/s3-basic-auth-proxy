@@ -59,8 +59,8 @@ dispatcher.onGet(/^\/server\/((\breleases\b)|(\bsnapshots\b))\/.*/, function(req
 });
 
 dispatcher.onGet("/", function(req, res) {
-	res.writeHead(200, {'Content-Type': 'text/plain'});
-	res.end("releases: /server/releases\nsnapshots: /server/snapshots");
+	res.writeHead(200, {'Content-Type': 'text/html'});
+	res.end("releases: <a href='/server/releases'>/server/releases</a><br>snapshots: <a href='/server/snapshots'>/server/snapshots</a>");
 }); 
 
 dispatcher.onGet("/server/releases", function(req, res) {
